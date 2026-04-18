@@ -1,4 +1,4 @@
-# Claude Prompt Test Harness
+# Test Harness
 
 A browser-based tool for running the same prompt multiple times in parallel against the Claude API, comparing outputs side by side, and scoring consistency. Built for legal teams evaluating prompt reliability across case document workflows.
 
