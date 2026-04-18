@@ -6,7 +6,7 @@ A browser-based tool for running the same prompt multiple times in parallel agai
 
 ## Live tool
 
-**[YOUR-USERNAME.github.io/prompt-test-harness](https://tamollyo.github.io/case-review-testing/)**
+**[https://tamollyo.github.io/case-review-testing/](https://tamollyo.github.io/case-review-testing/)**
 
 ---
 
