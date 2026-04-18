@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Prompt Test Harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:           #f5f3ef;
+  --surface:      #ffffff;
+  --surface-2:    #f0ede8;
+  --border:       #d8d4cc;
+  --border-strong:#b8b4ac;
+  --text:         #1a1916;
+  --text-muted:   #6b6760;
+  --text-faint:   #9b9790;
+  --accent:       #1a1916;
+  --accent-fg:    #f5f3ef;
+  --green-bg:     #e8f0e4; --green-text: #2d5a1e; --green-border: #8ab87a;
+  --amber-bg:     #f5ead4; --amber-text: #7a4e0a; --amber-border: #d4a855;
+  --red-bg:       #f2e4e4; --red-text:   #7a1e1e; --red-border:   #c47a7a;
+  --blue-bg:      #e8eef8; --blue-text:  #1a3a6b; --blue-border:  #7a9fd4;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --r:  4px;
+  --rl: 8px;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--accent);
+  color: var(--accent-fg);
+  padding: 0 28px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.logo-dot { width: 8px; height: 8px; background: #e8b84b; border-radius: 50%; }
+
+.header-key {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.api-key-input {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 7px 11px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: var(--r);
+  color: var(--accent-fg);
+  width: 240px;
+  outline: none;
+}
+.api-key-input::placeholder { color: rgba(255,255,255,0.35); }
+.api-key-input:focus { border-color: rgba(255,255,255,0.55); }
+
+.key-status {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: rgba(255,255,255,0.45);
+  white-space: nowrap;
+}
+.key-status.valid { color: #8ab87a; }
+
+/* ── LAYOUT ── */
+main { max-width: 1300px; margin: 0 auto; padding: 28px 24px 60px; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+/* Left column: natural flow, no clipping */
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── PANELS ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  gap: 12px;
+}
+
+.panel-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.panel-subtitle {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.panel-body { padding: 18px; }
+
+/* ── FIELDS ── */
+.field { margin-bottom: 18px; }
+.field:last-child { margin-bottom: 0; }
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-family: var(--sans);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+textarea, select {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.65;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+textarea:focus, select:focus { border-color: var(--border-strong); background: var(--surface); }
+textarea { min-height: 90px; }
+
+/* ── SLIDERS ── */
+.slider-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+input[type=range] {
+  width: 100%;
+  appearance: none;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  display: block;
+}
+input[type=range]::-webkit-slider-thumb {
+  appearance: none;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+input[type=range]::-moz-range-thumb {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--surface);
+}
+
+.slider-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  min-width: 40px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--r);
+  padding: 22px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface-2);
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--border-strong);
+  background: var(--bg);
+}
+.upload-zone input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.upload-arrow { font-size: 24px; opacity: 0.3; margin-bottom: 6px; line-height: 1; }
+.upload-primary { font-family: var(--mono); font-size: 12px; color: var(--text-muted); pointer-events: none; }
+.upload-secondary { font-size: 11px; color: var(--text-faint); margin-top: 4px; pointer-events: none; }
+
+.file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  padding: 7px 10px;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-border);
+  border-radius: var(--r);
+  gap: 8px;
+  min-width: 0;
+}
+.file-chip.error { background: var(--red-bg); border-color: var(--red-border); }
+.file-chip-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--blue-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.file-chip.error .file-chip-name { color: var(--red-text); }
+.file-chip-size {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-chip-err {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--red-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.file-remove:hover { color: var(--red-text); }
+
+.proc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 10px;
+}
+.mini-spin {
+  width: 11px; height: 11px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--text-muted);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── RUN BUTTON ── */
+.run-btn {
+  width: 100%;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--accent-fg);
+  transition: opacity 0.15s;
+  margin-top: 6px;
+}
+.run-btn:hover { opacity: 0.82; }
+.run-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* ── RESULTS TOOLBAR ── */
+.results-top {
+  margin-bottom: 18px;
+}
+
+.results-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.results-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ghost-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text-muted);
+  transition: all 0.12s;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.ghost-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.ghost-btn.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+
+.stat-cell {
+  background: var(--surface);
+  padding: 13px 8px;
+  text-align: center;
+}
+
+.stat-val {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+  display: block;
+  white-space: nowrap;
+}
+
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  display: block;
+  margin-top: 3px;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+/* ── RUN CARDS ── */
+.runs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.run-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.run-card.scored-good { border-color: var(--green-border); border-width: 1.5px; }
+.run-card.scored-ok   { border-color: var(--amber-border); border-width: 1.5px; }
+.run-card.scored-bad  { border-color: var(--red-border);   border-width: 1.5px; }
+
+.run-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.run-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.run-badges {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.score-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 9px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.score-badge.good { background: var(--green-bg); color: var(--green-text); }
+.score-badge.ok   { background: var(--amber-bg); color: var(--amber-text); }
+.score-badge.bad  { background: var(--red-bg);   color: var(--red-text); }
+.score-badge.none { background: var(--surface); color: var(--text-faint); border: 1px solid var(--border); }
+
+/* Score row: label + 3 buttons, never wraps */
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.score-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.score-btns { display: flex; gap: 6px; }
+
+.score-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 14px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.score-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.score-btn.active-good { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+.score-btn.active-ok   { background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber-border); }
+.score-btn.active-bad  { background: var(--red-bg);   color: var(--red-text);   border-color: var(--red-border); }
+
+.run-output {
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-y: auto;
+  max-height: 380px;
+  flex: 1;
+  word-break: break-word;
+}
+
+mark { background: var(--amber-bg); color: var(--amber-text); border-radius: 2px; padding: 0 2px; }
+
+.run-note-area {
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.run-note-area input {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+.run-note-area input::placeholder { color: var(--text-faint); }
+
+/* ── PENDING / ERROR ── */
+.pending-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  padding: 48px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 200px;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text-muted);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pending-label { font-family: var(--mono); font-size: 11px; color: var(--text-faint); letter-spacing: 0.04em; }
+
+.error-card {
+  background: var(--red-bg);
+  border: 1px solid var(--red-border);
+  border-radius: var(--rl);
+  padding: 18px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--red-text);
+  line-height: 1.6;
+}
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 64px 20px;
+  border: 1px dashed var(--border);
+  border-radius: var(--rl);
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.empty-big { font-size: 28px; opacity: 0.25; margin-bottom: 10px; }
+
+/* ── SELECT ── */
+select {
+  cursor: pointer;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6760'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+}
+
+/* ── HISTORY ── */
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  background: var(--surface-2);
+  gap: 10px;
+}
+.history-item:last-child { margin-bottom: 0; }
+.history-item:hover { border-color: var(--border-strong); color: var(--text); }
+.history-prompt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.history-time { font-size: 10px; color: var(--text-faint); white-space: nowrap; flex-shrink: 0; }
+
+/* ── DIVIDER ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 6px 0 18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>claude prompt test harness</div>
+  <div class="header-key">
+    <input class="api-key-input" id="api-key" type="password"
+           placeholder="sk-ant-api03-..." oninput="validateKey(this.value)" autocomplete="off">
+    <span class="key-status" id="key-status">no key</span>
+  </div>
+</header>
+
+<main>
+  <div class="layout">
+
+    <!-- ══ LEFT COLUMN ══ -->
+    <div class="left-col">
+
+      <!-- PROMPTS -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Prompts</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="field">
+            <span class="field-label">System prompt</span>
+            <p class="field-hint">Sets Claude's role and rules. Stays fixed across all runs — edit to test different skill instructions.</p>
+            <textarea id="system-prompt" rows="9">You are a senior legal assistant reviewing documents from a personal injury case. Read all provided case documents and prepare a structured case summary for the supervising attorney.
+
+Label every material fact inline with one of three tags:
+- [UNDISPUTED] — admitted by both parties, confirmed by physical evidence, or uncontradicted in the record (confirmed by at least two independent sources)
+- [CONTESTED] — disputed between parties, alleged but unverified, or supported by only one party
+- [UNCLEAR] — not addressed or not determinable from the available documents
+
+Rules:
+- Do not infer or extrapolate facts not stated in the documents.
+- When in doubt between [UNDISPUTED] and [CONTESTED], default to [CONTESTED].
+- Use professional, neutral language. Cite all facts as (Source: [Document Name]).
+- Output in plain text.</textarea>
+          </div>
+
+          <hr class="divider">
+
+          <div class="field">
+            <span class="field-label">User prompt</span>
+            <p class="field-hint">The specific task for this test session. Change this to test different questions against the same documents and system prompt.</p>
+            <textarea id="user-prompt" rows="4" placeholder="e.g. Summarize the liability facts from the attached case documents. Classify each fact as [UNDISPUTED], [CONTESTED], or [UNCLEAR]."></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Documents</span>
+          <span class="panel-subtitle" id="file-count-label">none attached</span>
+        </div>
+        <div class="panel-body">
+          <p class="field-hint" style="margin-bottom:12px;">Attach case files to send alongside your prompt. Files are held in memory and sent on every run.</p>
+          <div class="upload-zone" id="upload-zone"
+               ondragover="handleDragOver(event)" ondragleave="handleDragLeave()" ondrop="handleDrop(event)">
+            <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.webp"
+                   onchange="handleFiles(this.files)">
+            <div class="upload-arrow">&#8679;</div>
+            <div class="upload-primary">Drop files here or click to browse</div>
+            <div class="upload-secondary">PDF, PNG, JPG, WEBP &mdash; up to 20 MB each</div>
+          </div>
+          <div class="file-list" id="file-list"></div>
+          <div id="proc-indicator" style="display:none; margin-top:10px;">
+            <div class="proc-badge"><div class="mini-spin"></div>Reading files...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Settings</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="field">
+            <span class="field-label">Model</span>
+            <p class="field-hint">Sonnet 4.6 is recommended for most testing. Opus 4.7 is the most capable. Haiku 4.5 is fastest and cheapest for high-volume runs.</p>
+            <select id="model-select">
+              <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recommended)</option>
+              <option value="claude-opus-4-7">Claude Opus 4.7 (most capable)</option>
+              <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (fastest)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Number of runs</span>
+            <p class="field-hint">How many parallel calls to fire. More runs reveal more variance.</p>
+            <div class="slider-row">
+              <input type="range" id="runs-slider" min="2" max="8" value="3" step="1"
+                     oninput="document.getElementById('runs-val').textContent=this.value">
+              <span class="slider-val" id="runs-val">3</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Temperature</span>
+            <p class="field-hint">0 = deterministic (consistent). 0.7–1.0 = more variation between runs.</p>
+            <div class="slider-row">
+              <input type="range" id="temp-slider" min="0" max="10" value="7" step="1"
+                     oninput="document.getElementById('temp-val').textContent=(this.value/10).toFixed(1)">
+              <span class="slider-val" id="temp-val">0.7</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Max output tokens</span>
+            <p class="field-hint">Cap on response length. Increase for longer case summaries.</p>
+            <div class="slider-row">
+              <input type="range" id="tokens-slider" min="200" max="2000" value="1000" step="50"
+                     oninput="document.getElementById('tokens-val').textContent=this.value">
+              <span class="slider-val" id="tokens-val">1000</span>
+            </div>
+          </div>
+
+          <button class="run-btn" id="run-btn" onclick="runTests()">Run tests &rarr;</button>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="panel" id="history-section" style="display:none;">
+        <div class="panel-header">
+          <span class="panel-title">Session history</span>
+          <button class="ghost-btn" onclick="clearHistory()">clear</button>
+        </div>
+        <div style="padding:14px;" id="history-list"></div>
+      </div>
+
+    </div><!-- /left-col -->
+
+    <!-- ══ RIGHT COLUMN ══ -->
+    <div class="right-col">
+
+      <div class="results-top">
+        <div class="results-meta-row">
+          <span class="results-meta" id="results-meta">Results will appear here after running tests.</span>
+          <div class="toolbar-actions">
+            <button class="ghost-btn" id="diff-btn" onclick="toggleDiff()">Highlight diff</button>
+            <button class="ghost-btn" onclick="exportResults()">Export JSON</button>
+            <button class="ghost-btn" onclick="exportMarkdown()">Export MD</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-cell"><span class="stat-val" id="s-runs">--</span><span class="stat-label">Runs</span></div>
+        <div class="stat-cell"><span class="stat-val" id="s-good">--</span><span class="stat-label">Good</span></div>
+        <div class="stat-cell"><span class="stat-val" id="s-ok">--</span><span class="stat-label">Ok</span></div>
+        <div class="stat-cell"><span class="stat-val" id="s-bad">--</span><span class="stat-label">Bad</span></div>
+        <div class="stat-cell"><span class="stat-val" id="s-tok">--</span><span class="stat-label">Avg tok</span></div>
+        <div class="stat-cell"><span class="stat-val" id="s-ms">--</span><span class="stat-label">Avg ms</span></div>
+      </div>
+
+      <div class="runs-grid" id="runs-grid">
+        <div class="empty-state">
+          <div class="empty-big">&#9672;</div>
+          Fill in a user prompt and click <strong>Run tests</strong> to begin.<br>
+          Results from each run will appear here side by side.
+        </div>
+      </div>
+
+    </div><!-- /right-col -->
+
+  </div>
+</main>
+
+<script>
+const state = {
+  results: [],
+  diffMode: false,
+  files: [],
+  history: JSON.parse(localStorage.getItem('ph_history') || '[]'),
+};
+
+/* ── KEY ── */
+function validateKey(val) {
+  const el = document.getElementById('key-status');
+  if (val.startsWith('sk-ant-')) { el.textContent = 'key set'; el.className = 'key-status valid'; }
+  else if (val.length > 5)       { el.textContent = 'invalid format'; el.className = 'key-status'; }
+  else                           { el.textContent = 'no key'; el.className = 'key-status'; }
+}
+
+/* ── FILE UPLOAD ── */
+function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function handleDragLeave() { document.getElementById('upload-zone').classList.remove('drag-over'); }
+function handleDrop(e) { e.preventDefault(); handleDragLeave(); handleFiles(e.dataTransfer.files); }
+
+function handleFiles(fileList) {
+  document.getElementById('proc-indicator').style.display = 'block';
+  Promise.all(Array.from(fileList).map(readFile)).then(() => {
+    document.getElementById('proc-indicator').style.display = 'none';
+    renderFileList();
+    document.getElementById('file-input').value = '';
+  });
+}
+
+function readFile(file) {
+  return new Promise(resolve => {
+    if (file.size > 20 * 1024 * 1024) {
+      state.files.push({ name: file.name, size: file.size, error: 'Too large (max 20 MB)' });
+      return resolve();
+    }
+    const mediaType = getMediaType(file);
+    if (!mediaType) {
+      state.files.push({ name: file.name, size: file.size, error: 'Unsupported type' });
+      return resolve();
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const result = e.target && e.target.result;
+      if (!result || typeof result !== 'string' || !result.includes(',')) {
+        state.files.push({ name: file.name, size: file.size, error: 'Failed to read file' });
+        return resolve();
+      }
+      const b64 = result.split(',')[1];
+      if (!b64) {
+        state.files.push({ name: file.name, size: file.size, error: 'Empty file content' });
+        return resolve();
+      }
+      state.files.push({ name: file.name, size: file.size, mediaType, b64 });
+      resolve();
+    };
+    reader.onerror = () => {
+      state.files.push({ name: file.name, size: file.size, error: 'File read error — try again' });
+      resolve();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function getMediaType(file) {
+  if (file.type === 'application/pdf') return 'application/pdf';
+  if (file.type.startsWith('image/')) return file.type;
+  const ext = file.name.split('.').pop().toLowerCase();
+  return { pdf:'application/pdf', png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp' }[ext] || null;
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + 'B';
+  if (b < 1048576) return Math.round(b / 1024) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function removeFile(i) { state.files.splice(i, 1); renderFileList(); }
+
+function renderFileList() {
+  const good = state.files.filter(f => !f.error).length;
+  document.getElementById('file-count-label').textContent = good ? `${good} file${good > 1 ? 's' : ''} attached` : 'none attached';
+  document.getElementById('file-list').innerHTML = state.files.map((f, i) => `
+    <div class="file-chip ${f.error ? 'error' : ''}">
+      <span class="file-chip-name">${esc(f.name)}</span>
+      <span class="file-chip-size">${fmtSize(f.size)}</span>
+      ${f.error ? `<span class="file-chip-err">${esc(f.error)}</span>` : ''}
+      <button class="file-remove" onclick="removeFile(${i})" title="Remove">&times;</button>
+    </div>`).join('');
+}
+
+/* ── BUILD CONTENT ── */
+function buildContent(userPrompt) {
+  const content = [];
+  state.files.filter(f => f.b64 && !f.error).forEach(f => {
+    if (f.mediaType === 'application/pdf') {
+      content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.b64 } });
+    } else {
+      content.push({ type: 'image', source: { type: 'base64', media_type: f.mediaType, data: f.b64 } });
+    }
+  });
+  content.push({ type: 'text', text: userPrompt });
+  return content;
+}
+
+/* ── API ── */
+async function callAPI(system, userPrompt, model, temp, maxTok) {
+  const key = document.getElementById('api-key').value.trim();
+  if (!key) throw new Error('No API key — paste your key in the header field.');
+  const start = Date.now();
+  const body = {
+    model,
+    max_tokens: maxTok,
+    temperature: temp,
+    messages: [{ role: 'user', content: buildContent(userPrompt) }],
+  };
+  if (system.trim()) body.system = system.trim();
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e?.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return {
+    text:   (data.content || []).filter(b => b.type === 'text').map(b => b.text).join(''),
+    ms:     Date.now() - start,
+    tokens: data.usage?.output_tokens || 0,
+  };
+}
+
+/* ── RUN ── */
+async function runTests() {
+  const userPrompt = document.getElementById('user-prompt').value.trim();
+  if (!userPrompt) { alert('Please enter a user prompt before running tests.'); return; }
+
+  const sys     = document.getElementById('system-prompt').value;
+  const numRuns = parseInt(document.getElementById('runs-slider').value);
+  const temp    = parseInt(document.getElementById('temp-slider').value) / 10;
+  const maxTok  = parseInt(document.getElementById('tokens-slider').value);
+  const model   = document.getElementById('model-select').value;
+  const goodFiles = state.files.filter(f => f.b64 && !f.error);
+
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = `Running ${numRuns} tests...`;
+
+  state.results = [];
+  state.diffMode = false;
+  document.getElementById('diff-btn').classList.remove('active');
+
+  const modelShort = model.split('-').slice(1, 3).join(' ');
+  const fileNote   = goodFiles.length ? ` · ${goodFiles.length} doc${goodFiles.length > 1 ? 's' : ''}` : '';
+  document.getElementById('results-meta').textContent =
+    `${modelShort} · temp ${temp.toFixed(1)} · ${maxTok} tokens${fileNote}`;
+
+  const grid = document.getElementById('runs-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < numRuns; i++) { grid.appendChild(mkPending(i)); state.results.push(null); }
+  resetStats(numRuns);
+
+  const settled = await Promise.allSettled(
+    Array.from({ length: numRuns }, () => callAPI(sys, userPrompt, model, temp, maxTok))
+  );
+
+  settled.forEach((res, i) => {
+    const card = document.getElementById(`card-${i}`);
+    if (res.status === 'fulfilled') {
+      const { text, ms, tokens } = res.value;
+      state.results[i] = { text, ms, tokens, score: null, note: '' };
+      renderCard(card, i, text, ms, tokens);
+    } else {
+      state.results[i] = { text: null, ms: 0, tokens: 0, score: 'error', note: res.reason?.message || '' };
+      card.className = 'error-card';
+      card.innerHTML = `<strong>Run ${i + 1} failed</strong><br><br>${esc(res.reason?.message || 'Unknown error')}`;
+    }
+  });
+
+  updateStats();
+  saveHistory(userPrompt, model, temp, numRuns);
+  btn.disabled = false;
+  btn.textContent = 'Run tests →';
+}
+
+function mkPending(i) {
+  const c = document.createElement('div');
+  c.className = 'pending-card';
+  c.id = `card-${i}`;
+  c.innerHTML = `<div class="spinner"></div><div class="pending-label">Run ${i + 1} &mdash; waiting for response...</div>`;
+  return c;
+}
+
+function renderCard(card, i, text, ms, tokens) {
+  card.className = 'run-card';
+  card.innerHTML = `
+    <div class="run-card-header">
+      <span class="run-num">Run ${i + 1}</span>
+      <div class="run-badges">
+        <span class="tag">${tokens} tokens</span>
+        <span class="tag">${ms} ms</span>
+        <span class="score-badge none" id="badge-${i}">Unscored</span>
+      </div>
+    </div>
+    <div class="score-row">
+      <span class="score-label">Score</span>
+      <div class="score-btns">
+        <button class="score-btn" data-val="good" onclick="score(${i},'good')">Good</button>
+        <button class="score-btn" data-val="ok"   onclick="score(${i},'ok')">Ok</button>
+        <button class="score-btn" data-val="bad"  onclick="score(${i},'bad')">Bad</button>
+      </div>
+    </div>
+    <div class="run-output" id="output-${i}">${esc(text)}</div>
+    <div class="run-note-area">
+      <input type="text" placeholder="Add a note about this run..." oninput="state.results[${i}].note=this.value">
+    </div>`;
+}
+
+function score(i, val) {
+  if (!state.results[i]) return;
+  state.results[i].score = val;
+  const card = document.getElementById(`card-${i}`);
+  card.className = `run-card scored-${val}`;
+  card.querySelectorAll('.score-btn').forEach(b => {
+    b.className = b.dataset.val === val ? `score-btn active-${val}` : 'score-btn';
+  });
+  const badge = document.getElementById(`badge-${i}`);
+  badge.className = `score-badge ${val}`;
+  badge.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+  updateStats();
+}
+
+function resetStats(n) {
+  document.getElementById('s-runs').textContent = n;
+  ['s-good','s-ok','s-bad','s-tok','s-ms'].forEach(id => document.getElementById(id).textContent = '--');
+}
+
+function updateStats() {
+  const valid  = state.results.filter(r => r && r.tokens > 0);
+  const scored = state.results.filter(r => r && r.score && r.score !== 'error');
+  document.getElementById('s-good').textContent = scored.filter(r => r.score === 'good').length;
+  document.getElementById('s-ok').textContent   = scored.filter(r => r.score === 'ok').length;
+  document.getElementById('s-bad').textContent  = scored.filter(r => r.score === 'bad').length;
+  if (valid.length) {
+    document.getElementById('s-tok').textContent = Math.round(valid.reduce((s, r) => s + r.tokens, 0) / valid.length);
+    document.getElementById('s-ms').textContent  = Math.round(valid.reduce((s, r) => s + r.ms,     0) / valid.length);
+  }
+}
+
+function toggleDiff() {
+  state.diffMode = !state.diffMode;
+  document.getElementById('diff-btn').classList.toggle('active', state.diffMode);
+  state.results.forEach((r, i) => {
+    if (!r || !r.text) return;
+    const el = document.getElementById(`output-${i}`);
+    if (el) el.innerHTML = state.diffMode ? highlightUnique(i) : esc(r.text);
+  });
+}
+
+function highlightUnique(idx) {
+  const words  = state.results[idx].text.split(/\s+/);
+  const others = state.results.filter((r, i) => i !== idx && r && r.text).map(r => r.text.toLowerCase());
+  return words.map(w => {
+    const clean = w.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    if (clean.length < 5) return esc(w);
+    return !others.some(o => o.includes(clean)) ? `<mark>${esc(w)}</mark>` : esc(w);
+  }).join(' ');
+}
+
+function exportResults() {
+  const data = {
+    timestamp: new Date().toISOString(),
+    config: {
+      model:        document.getElementById('model-select').value,
+      temperature:  parseInt(document.getElementById('temp-slider').value) / 10,
+      maxTokens:    parseInt(document.getElementById('tokens-slider').value),
+      systemPrompt: document.getElementById('system-prompt').value,
+      userPrompt:   document.getElementById('user-prompt').value,
+      attachedFiles: state.files.filter(f => !f.error).map(f => f.name),
+    },
+    runs: state.results.map((r, i) => ({
+      run: i + 1, score: r?.score, tokens: r?.tokens, ms: r?.ms, note: r?.note, text: r?.text,
+    })),
+  };
+  dl('test-results.json', JSON.stringify(data, null, 2), 'application/json');
+}
+
+function exportMarkdown() {
+  const sys   = document.getElementById('system-prompt').value;
+  const user  = document.getElementById('user-prompt').value;
+  const model = document.getElementById('model-select').value;
+  const temp  = (parseInt(document.getElementById('temp-slider').value) / 10).toFixed(1);
+  const files = state.files.filter(f => !f.error).map(f => f.name);
+
+  let md = `# Prompt Test Results\n\n`;
+  md += `**Date:** ${new Date().toLocaleString()}\n`;
+  md += `**Model:** ${model} | **Temperature:** ${temp}\n`;
+  if (files.length) md += `**Documents:** ${files.join(', ')}\n`;
+  md += `\n`;
+  if (sys.trim()) md += `## System Prompt\n\`\`\`\n${sys.trim()}\n\`\`\`\n\n`;
+  md += `## User Prompt\n\`\`\`\n${user.trim()}\n\`\`\`\n\n## Results\n\n`;
+
+  state.results.forEach((r, i) => {
+    if (!r) return;
+    md += `### Run ${i + 1}${r.score ? ` — ${r.score.toUpperCase()}` : ''}\n`;
+    md += `*${r.tokens} tokens · ${r.ms} ms*\n\n`;
+    if (r.text) md += `${r.text}\n\n`;
+    if (r.note) md += `> Note: ${r.note}\n\n`;
+    md += '---\n\n';
+  });
+
+  dl('test-results.md', md, 'text/markdown');
+}
+
+function dl(name, content, type) {
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([content], { type })),
+    download: name,
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function saveHistory(prompt, model, temp, runs) {
+  const item = {
+    id: Date.now(),
+    prompt: prompt.slice(0, 80) + (prompt.length > 80 ? '...' : ''),
+    model:  model.split('-').slice(1, 3).join(' '),
+    temp, runs,
+    ts:           new Date().toLocaleTimeString(),
+    systemPrompt: document.getElementById('system-prompt').value,
+    fullPrompt:   prompt,
+  };
+  state.history.unshift(item);
+  if (state.history.length > 10) state.history.pop();
+  localStorage.setItem('ph_history', JSON.stringify(state.history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const section = document.getElementById('history-section');
+  const list    = document.getElementById('history-list');
+  if (!state.history.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = state.history.map(h => `
+    <div class="history-item" onclick="loadHistory(${h.id})">
+      <span class="history-prompt">${esc(h.prompt)}</span>
+      <span class="history-time">${h.ts}</span>
+    </div>`).join('');
+}
+
+function loadHistory(id) {
+  const item = state.history.find(h => h.id === id);
+  if (!item) return;
+  document.getElementById('system-prompt').value = item.systemPrompt || '';
+  document.getElementById('user-prompt').value   = item.fullPrompt   || '';
+}
+
+function clearHistory() {
+  state.history = [];
+  localStorage.removeItem('ph_history');
+  renderHistory();
+}
+
+function esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+renderHistory();
+</script>
+</body>
+</html>
