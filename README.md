@@ -150,7 +150,3 @@ git push
 - This tool makes direct browser-to-API calls using Anthropic's `anthropic-dangerous-direct-browser-access` header, which is intended for trusted internal tooling of this kind
 
 ---
-
-## Questions
-
-Contact the HR or legal ops team for access questions, or open an issue in this repo for bug reports.
