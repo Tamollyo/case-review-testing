@@ -8,8 +8,6 @@ A browser-based tool for running the same prompt multiple times in parallel agai
 
 **[YOUR-USERNAME.github.io/prompt-test-harness](https://tamollyo.github.io/case-review-testing/)**
 
-> Replace the link above with your actual GitHub Pages URL after deploying.
-
 ---
 
 ## What it does
